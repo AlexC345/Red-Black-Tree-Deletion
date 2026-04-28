@@ -55,6 +55,35 @@ node* getGrandfather(node* current){//gets the grandfather of a node
 	}
 }
 
+node* getSibling(node* current){//gets the sibling of a node
+	if (current == current->parent->left){
+		return current->parent->right;
+	}
+	else if (current == current->parent->right){
+		return current->parent->left;
+	}
+}
+
+node* getFarNephew(node* current){//gets the far nephew of a node
+	node* sibling = getSbiling(current);
+	if (current->parent->right == sibling){
+		return sibling->right;
+	}
+	else if (current->parent->left == sibling){
+		return sibling->left;
+	}
+}
+
+node* getNearNephew(node* current){//gets the near nephew of a node
+	node* sibling = getSbiling(current);
+	if (current->parent->right == sibling){
+		return sibling->left;
+	}
+	else if (current->parent->left == sibling){
+		return sibling->right;
+	}
+}
+
 node* getUncle(node* current){//gets the uncle of a node
 	node* grandfather = getGrandfather(current);
 	if (grandfather != nullptr){
@@ -258,11 +287,10 @@ void deleteNode(node* current, int delValue, node* &root){//recursive delete fun
 					current->parent->right = current->right;
 					current->right->parent = current->parent;
 				}
+
 				delete current;
 			}
 			else{//if current is root:
-				//cout << "right: " << root->getRight()->getValue();
-				//cout << "left: " << root->getLeft()->getValue();
 				root = root->right;//sets new root
 			}
 		}
@@ -312,12 +340,8 @@ void deleteNode(node* current, int delValue, node* &root){//recursive delete fun
 			}
 			else{ //if current == root
 				root = successor; //sets the new root to successor
-				//cout << "a new root has been set! value: " << root->getValue() << endl;
-				//cout << "current's value is: " << current->getValue() << endl;
 			}
-			//cout << "does SUCCESSOR == CURRENT?: " << (successor == current) << endl; //true??
-			//cout << "does current == root?: " << (current == root) << endl; //true??
-			delete current; //deletes current (i spent like an hour trying to figure out why, turns out current was equal to root and i was deleting the root which caused segmentation faults)
+			delete current;
 		}
 	}
 	else{ //if current node is not the one to delete, recursively run function until we find current;
@@ -326,6 +350,29 @@ void deleteNode(node* current, int delValue, node* &root){//recursive delete fun
 		}
 		else{
 			deleteNode(current->right, delValue, root);
+		}
+	}
+}
+
+void deleteRecolor(int numOfChildren, node* deleteMe, node* successor, node* &root){
+	if (numOfChildren == 1){
+		if ((deleteMe->color == 'B' annd successor->color == 'B'){//if both deleteMe and successor is black:   double black case
+			successor->color = 'b'; //lowercase b as double black
+			while (successor->color == 'b' and successor != root){
+				node* sibling = getSibling(successor);
+				if (sibling->color == 'B' and ((sibling->left and sibling->left->color == 'R') or (sibling->right and sibling->right->color == 'B'))){ //if sibling is red and at least one of sibling's children is red:
+					node* redChild = getFarNephew(successor);
+					if ((sibling == sibling->parent->left and redChild == sibling->left) or (sibling->left and sibling->left->color == 'R' and sibling->rigt and sibling->right->color == 'R')){//left left case
+						
+					}
+				}
+			}
+			if (successor == root){
+				successor->color = 'B';
+			}
+		}
+		else if ((deleteMe->color == 'R' and successor->color == 'B') or (deleteMe->color == 'B' and successor->color == 'R')){//if either deleteMe or successor is red: (but not both)   red black case
+			successor->color = 'B';
 		}
 	}
 }
