@@ -62,25 +62,34 @@ node* getSibling(node* current){//gets the sibling of a node
 	else if (current == current->parent->right){
 		return current->parent->left;
 	}
+	else{
+		return nullptr;
+	}
 }
 
 node* getFarNephew(node* current){//gets the far nephew of a node
-	node* sibling = getSbiling(current);
+	node* sibling = getSibling(current);
 	if (current->parent->right == sibling){
 		return sibling->right;
 	}
 	else if (current->parent->left == sibling){
 		return sibling->left;
+	}
+	else{
+		return nullptr;
 	}
 }
 
 node* getNearNephew(node* current){//gets the near nephew of a node
-	node* sibling = getSbiling(current);
+	node* sibling = getSibling(current);
 	if (current->parent->right == sibling){
 		return sibling->left;
 	}
 	else if (current->parent->left == sibling){
 		return sibling->right;
+	}
+	else{
+		return nullptr;
 	}
 }
 
@@ -258,10 +267,68 @@ void eraseNodeFromParent(node* current, node* replacingNode){ //erases the (pare
 node* getSuccessor(node* current){ //gets the successor of a node
 	node* right = current->right;
 	node* rightCur = right;
-	while (rightCur->left != nullptr){
+	while (current and rightCur->left != nullptr){
 		rightCur = rightCur->left;
 	}
 	return rightCur;
+}
+
+void deleteRecolor(node* &root, node* parent, node* sibling, node* successor){
+	sibling->color = 'R';
+	if (parent->color == 'R'){
+		parent->color = 'B';
+	}
+	else if (parent->color == 'B'){
+		if (parent != root){
+			parent->color = 'b';
+			return deleteRecolor(root, parent->parent, getSibling(parent), parent);
+		}
+	}
+}
+
+void deleteUpdate(node* deleteMe, node* successor, node* &root){
+	if (deleteMe->color == 'B' and successor->color == 'B'){//if both deleteMe and successor is black:   double black case
+		successor->color = 'b'; //lowercase b as double black
+		while (successor->color == 'b' and successor != root){
+			node* sibling = getSibling(successor);
+			if (sibling->color == 'B' and ((sibling->left and sibling->left->color == 'R') or (sibling->right and sibling->right->color == 'B'))){ //if sibling is red and at least one of sibling's children is red:
+				node* redChild = getFarNephew(successor);
+				if ((sibling == sibling->parent->left and redChild == sibling->left) or (sibling->left and sibling->left->color == 'R' and sibling->right and sibling->right->color == 'R')){//LL Case
+					root = rightRotation(sibling->parent);
+				}
+				else if ((sibling == sibling->parent->left) and (redChild == sibling->right)){//LR Case
+					root = leftRotation(sibling);
+					root = rightRotation(successor->parent);
+				}
+				else if ((sibling == sibling->parent->right and redChild == sibling->right) or (sibling->left and sibling->left->color == 'R' and sibling->right and sibling->right->color == 'R')){//RR Case
+					root = leftRotation(sibling->parent);
+				}
+				else if ((sibling == sibling->parent->right) and (redChild = sibling->left)){//RL Case
+					root = rightRotation(sibling);
+					root = leftRotation(successor->parent);
+				}
+			}
+			else if (sibling->color == 'B' and ((sibling->left and sibling->left->color == 'B') or !sibling->left) and ((sibling->right and sibling->right->color == 'B') or !sibling->right)){//if sibling is black and both its children are black:
+				deleteRecolor(root, successor->parent, sibling, successor);//recolors tree, moving upwards
+			}
+			else if (sibling->color == 'R'){
+				//perform a rotation to move the sibling up
+				if (sibling == sibling->parent->left){//L case
+					root = rightRotation(sibling->parent);
+				}
+				else if (sibling == sibling->parent->right){//R case
+					root = leftRotation(sibling->parent);
+				}
+				deleteRecolor(root, successor->parent, sibling, successor);
+			}
+		}
+		if (successor == root){
+			successor->color = 'B';
+		}
+	}
+	else if ((deleteMe->color == 'R' and successor->color == 'B') or (deleteMe->color == 'B' and successor->color == 'R')){//if either deleteMe or successor is red: (but not both)   red black case
+		successor->color = 'B';
+	}
 }
 
 void deleteNode(node* current, int delValue, node* &root){//recursive delete function that finds the node with the value to delete and rearanges the tree after deleting
@@ -287,7 +354,6 @@ void deleteNode(node* current, int delValue, node* &root){//recursive delete fun
 					current->parent->right = current->right;
 					current->right->parent = current->parent;
 				}
-
 				delete current;
 			}
 			else{//if current is root:
@@ -350,29 +416,6 @@ void deleteNode(node* current, int delValue, node* &root){//recursive delete fun
 		}
 		else{
 			deleteNode(current->right, delValue, root);
-		}
-	}
-}
-
-void deleteRecolor(int numOfChildren, node* deleteMe, node* successor, node* &root){
-	if (numOfChildren == 1){
-		if ((deleteMe->color == 'B' annd successor->color == 'B'){//if both deleteMe and successor is black:   double black case
-			successor->color = 'b'; //lowercase b as double black
-			while (successor->color == 'b' and successor != root){
-				node* sibling = getSibling(successor);
-				if (sibling->color == 'B' and ((sibling->left and sibling->left->color == 'R') or (sibling->right and sibling->right->color == 'B'))){ //if sibling is red and at least one of sibling's children is red:
-					node* redChild = getFarNephew(successor);
-					if ((sibling == sibling->parent->left and redChild == sibling->left) or (sibling->left and sibling->left->color == 'R' and sibling->rigt and sibling->right->color == 'R')){//left left case
-						
-					}
-				}
-			}
-			if (successor == root){
-				successor->color = 'B';
-			}
-		}
-		else if ((deleteMe->color == 'R' and successor->color == 'B') or (deleteMe->color == 'B' and successor->color == 'R')){//if either deleteMe or successor is red: (but not both)   red black case
-			successor->color = 'B';
 		}
 	}
 }
