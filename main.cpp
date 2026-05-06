@@ -274,23 +274,43 @@ node* getSuccessor(node* current){ //gets the successor of a node
 }
 
 void deleteRecolor(node* &root, node* parent, node* sibling, node* successor){
+	if (!sibling){//if sibling doesn't exist:
+		sibling = new node();
+		sibling->color = 'B';
+		sibling->parent = parent;
+	}
 	sibling->color = 'R';
 	if (parent->color == 'R'){
 		parent->color = 'B';
+		successor->color = 'B';
 	}
 	else if (parent->color == 'B'){
 		if (parent != root){
 			parent->color = 'b';
+			successor->color = 'B';
 			return deleteRecolor(root, parent->parent, getSibling(parent), parent);
+		}
+		else{
+			successor->color = 'B';
 		}
 	}
 }
 
 void deleteUpdate(node* deleteMe, node* successor, node* &root){
+	if (!successor){ //no child case where successor = nullptr
+		successor = new node();
+		successor->color = 'B';
+		successor->parent = deleteMe;
+	}
 	if (deleteMe->color == 'B' and successor->color == 'B'){//if both deleteMe and successor is black:   double black case
 		successor->color = 'b'; //lowercase b as double black
 		while (successor->color == 'b' and successor != root){
 			node* sibling = getSibling(successor);
+			if (!sibling){//if sibling doesn't exist:
+				sibling = new node();
+				sibling->color = 'B';
+				sibling->parent = deleteMe;
+			}
 			if (sibling->color == 'B' and ((sibling->left and sibling->left->color == 'R') or (sibling->right and sibling->right->color == 'B'))){ //if sibling is red and at least one of sibling's children is red:
 				node* redChild = getFarNephew(successor);
 				if ((sibling == sibling->parent->left and redChild == sibling->left) or (sibling->left and sibling->left->color == 'R' and sibling->right and sibling->right->color == 'R')){//LL Case
@@ -326,7 +346,7 @@ void deleteUpdate(node* deleteMe, node* successor, node* &root){
 			successor->color = 'B';
 		}
 	}
-	else if ((deleteMe->color == 'R' and successor->color == 'B') or (deleteMe->color == 'B' and successor->color == 'R')){//if either deleteMe or successor is red: (but not both)   red black case
+	else if ((deleteMe->color == 'R' and (successor or successor->color == 'B')) or (deleteMe->color == 'B' and (successor and successor->color == 'R'))){//if either deleteMe or successor is red: (but not both)   red black case
 		successor->color = 'B';
 	}
 }
@@ -336,10 +356,13 @@ void deleteNode(node* current, int delValue, node* &root){//recursive delete fun
 		if (current->left == nullptr and current->right == nullptr){//if current has NO CHILDREN:
 			if (current != root){
 				eraseNodeFromParent(current, nullptr);//sets current's parent's child to null
+				cout << current->parent->value << endl;
+				deleteUpdate(current, nullptr, root);
 				delete current;
 			}
 			else{//if current is root (that means current is the only node in the tree):
 				root = nullptr; //set root to null
+				deleteUpdate(root, nullptr, root);
 			}
 		}
 		else if (current->left == nullptr and current->right != nullptr){//if current has ONE CHILD (right):
@@ -354,10 +377,12 @@ void deleteNode(node* current, int delValue, node* &root){//recursive delete fun
 					current->parent->right = current->right;
 					current->right->parent = current->parent;
 				}
+				deleteUpdate(current, current->right, root);
 				delete current;
 			}
 			else{//if current is root:
 				root = root->right;//sets new root
+				deleteUpdate(current, current->right, root);
 			}
 		}
 		else if (current->left != nullptr and current->right == nullptr){//if current has ONE CHILD (left):
@@ -372,10 +397,12 @@ void deleteNode(node* current, int delValue, node* &root){//recursive delete fun
 					current->parent->right = current->left;
 					current->left->parent = current->parent;
 				}
+				deleteUpdate(current, root->left, root);
 				delete current;
 			}
 			else{//if current is root:
 				root = root->left;//sets new root
+				deleteUpdate(current, current->left, root);
 			}
 		}
 		else if (current->left != nullptr and current->right != nullptr){//if current has TWO CHILDREN:
