@@ -152,9 +152,9 @@ node* rightRotation(node* current){
         node* oldParent = current->parent;
         node* Cleft = current->left;
         node* leftRight = Cleft->right;
-
+	//relink cLeft's parent
         Cleft->parent = oldParent;
-
+	//relink old parent's children
         if (oldParent != nullptr){
                 if (current == oldParent->left){
                         oldParent->left = Cleft;
@@ -163,11 +163,13 @@ node* rightRotation(node* current){
                         oldParent->right = Cleft;
                 }
         }
-
+	//relink cLeft's parent
         Cleft->right = current;
+	//relink current's parent
         current->parent = Cleft;
+	//relink current's left
         current->left = leftRight;
-
+	//relink leftRight's parent
         if (leftRight != nullptr){
                 leftRight->parent = current;
         }
@@ -320,19 +322,29 @@ void deleteUpdate(node* deleteMe, node* successor, node* &root){
 					}
 					bool siblingIsLeftChild = (sibling == sibling->parent->left);
 					bool nephewIsLeftChild = (sibling->left == redChild);
+					bool bothSiblingRedChildren = (sibling->left and sibling->left->color == 'R' and sibling->right and sibling->right->color == 'R');
 					node* parent = sibling->parent;
-					if (siblingIsLeftChild == nephewIsLeftChild){//LL case and RR case
+					if ((siblingIsLeftChild == nephewIsLeftChild) or bothSiblingRedChildren){//LL case and RR case
 						redChild->color = sibling->color;
 						sibling->color = parent->color;
 						if (siblingIsLeftChild and nephewIsLeftChild){//LL case
 							root = rightRotation(parent);
+							if (sibling->left){
+								sibling->left->color = 'B';
+							}
 						}
 						else{//RR case
 							root = leftRotation(parent);
+							if (sibling->right){
+								sibling->right->color = 'B';
+							}
 						}
+						break;
 					}
 					else{//LR case and RL case
 						redChild->color = parent->color;
+						parent->color = 'B';
+						sibling->color = 'B';
 						if (siblingIsLeftChild and !nephewIsLeftChild){//LR case
 							root = leftRotation(sibling);
 							root = rightRotation(parent);
@@ -341,6 +353,7 @@ void deleteUpdate(node* deleteMe, node* successor, node* &root){
 							root = rightRotation(sibling);
 							root = leftRotation(parent);
 						}
+						break;
 					}
 				}
 				else if (sibling->color == 'B' and (!sibling->left or sibling->left->color == 'B') and (!sibling->right or sibling->right->color == 'B')){//case 4
@@ -378,123 +391,34 @@ void deleteUpdate(node* deleteMe, node* successor, node* &root){
 			successor->color = 'B';
 		}
 	}
-	/*
-	if (!successor){ //no child case where successor = nullptr
-		successor = new node();
-		successor->color = 'B';
-		successor->parent = deleteMe;
-		//successor->parent->left = successor;	
-	}
-	if (deleteMe->color == 'B' and successor->color == 'B'){//if both deleteMe and successor is black:   double black case
-		cout << "double black case" << endl;
-		successor->color = 'b'; //lowercase b as double black
-		while (successor->color == 'b' and successor != root){
-			cout << "successor: " << successor->value << endl;
-			cout << "successor parent: " << successor->parent->value << endl;
-			node* sibling = getSibling(successor);
-			//node* sibling = getSibling(deleteMe);
-			if (!sibling){//if sibling doesn't exist:
-				sibling = new node();
-				sibling->color = 'B';
-				sibling->parent = deleteMe;
-			}
-			cout << "got sibling: " << sibling->value << endl;
-			if (sibling->color == 'B' and ((sibling->left and sibling->left->color == 'R') or (sibling->right and sibling->right->color == 'B'))){ //if sibling is red and at least one of sibling's children is red:
-				cout << "initiate rotation checks" << endl;
-				node* redChild = getFarNephew(successor);
-				if ((sibling == sibling->parent->left and redChild == sibling->left) or (sibling->left and sibling->left->color == 'R' and sibling->right and sibling->right->color == 'R')){//LL Case
-					cout << "LL" << endl;
-					root = rightRotation(sibling->parent);
-				}
-				else if ((sibling == sibling->parent->left) and (redChild == sibling->right)){//LR Case
-					cout << "LR" << endl;
-					root = leftRotation(sibling);
-					root = rightRotation(successor->parent);
-				}
-				else if ((sibling == sibling->parent->right and redChild == sibling->right) or (sibling->left and sibling->left->color == 'R' and sibling->right and sibling->right->color == 'R')){//RR Case
-					cout << "RR" << endl;
-					root = leftRotation(sibling->parent);
-				}
-				else if ((sibling == sibling->parent->right) and (redChild = sibling->left)){//RL Case
-					cout << "RL" << endl;
-					root = rightRotation(sibling);
-					root = leftRotation(successor->parent);
-				}
-			}
-			else if (sibling->color == 'B' and ((sibling->left and sibling->left->color == 'B') or !sibling->left) and ((sibling->right and sibling->right->color == 'B') or !sibling->right)){//if sibling is black and both its children are black:
-				deleteRecolor(root, successor->parent, sibling, successor);//recolors tree, moving upwards
-			}
-			else if (sibling->color == 'R'){
-				//perform a rotation to move the sibling up
-				if (sibling == sibling->parent->left){//L case
-					root = rightRotation(sibling->parent);
-				}
-				else if (sibling == sibling->parent->right){//R case
-					root = leftRotation(sibling->parent);
-				}
-				deleteRecolor(root, successor->parent, sibling, successor);
-			}
-		}
-		if (successor == root){
-			successor->color = 'B';
-		}
-	}
-	else if ((deleteMe->color == 'R' and (successor or successor->color == 'B')) or (deleteMe->color == 'B' and (successor and successor->color == 'R'))){//if either deleteMe or successor is red: (but not both)   red black case
-		successor->color = 'B';
-	}
-	*/
 }
 
 void deleteNode(node* current, node* &root){//delete function to delete and rearange the tree after deleting a node
-
-	//if (current->value == delValue){//if the current node is the one to delete:
 	if (current->left == nullptr and current->right == nullptr){//if current has NO CHILDREN:
 		if (current != root){
 			node* parent = current->parent;
-			bool wasLeftChild = (current == parent->left);
 
-			node* temp = new node();
-			temp->color = 'B';
-			temp->parent = parent;
-			if (wasLeftChild){
-				parent->left = temp;
-			}
-			else{
-				parent->right = temp;
-			}
+			node* successor = new node();
+			successor->color = 'B';
+			successor->parent = parent;
+			
+			eraseNodeFromParent(current, successor);
+			deleteUpdate(current, successor, root);
 
-			deleteUpdate(current, temp, root);
-
-			if (temp->parent != nullptr){
-				if (temp->parent->left == temp){
-					temp->parent->left = nullptr;
-				}
-				else if (temp->parent->right == temp){
-					temp->parent->right = nullptr;
-				}
+			if (successor->parent != nullptr){
+				eraseNodeFromParent(successor, nullptr);
 			}
-			else if (root == temp){
+			else if (root == successor){
 				root = nullptr;
 			}
 
-			delete temp;
+			delete successor;
 			delete current;
+
 		}
 		else{//if current is root (that means current is the only node in the tree):
 			root = nullptr; //set root to null
 		}
-		/*
-		if (current != root){
-			cout << current->parent->value << endl;
-			deleteUpdate(current, nullptr, root);
-			eraseNodeFromParent(current, nullptr);//sets current's parent's child to null
-			delete current;
-		}
-		else{//if current is root (that means current is the only node in the tree):
-			root = nullptr; //set root to null
-			deleteUpdate(current, nullptr, root);
-		}
-		*/
 	}
 	else if (current->left == nullptr and current->right != nullptr){//if current has ONE CHILD (right):
 		if (current != root){
