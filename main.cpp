@@ -111,7 +111,7 @@ node* getUncle(node* current){//gets the uncle of a node
 	}
 }
 
-node* leftRotation(node* current){
+node* leftRotation(node* current){//left rotation function
         if (current == nullptr or current->right == nullptr){
                 return getRoot(current);
         }
@@ -144,7 +144,7 @@ node* leftRotation(node* current){
         return getRoot(Cright);
 }
 
-node* rightRotation(node* current){
+node* rightRotation(node* current){//right rotation function
         if (current == nullptr || current->left == nullptr){
                 return getRoot(current);
         }
@@ -303,7 +303,7 @@ void deleteUpdate(node* deleteMe, node* successor, node* &root){
 		successor->color = 'b';
 		while (successor->color == 'b' and successor != root){
 			node* sibling = getSibling(successor);
-			if (!sibling){
+			if (!sibling){//if sibling doesn't exist, move up the tree
 				successor->color = 'B';
 				successor = successor->parent;
 				if (successor->color == 'R'){
@@ -325,8 +325,10 @@ void deleteUpdate(node* deleteMe, node* successor, node* &root){
 					bool bothSiblingRedChildren = (sibling->left and sibling->left->color == 'R' and sibling->right and sibling->right->color == 'R');
 					node* parent = sibling->parent;
 					if ((siblingIsLeftChild == nephewIsLeftChild) or bothSiblingRedChildren){//LL case and RR case
+						//recoloring
 						redChild->color = sibling->color;
 						sibling->color = parent->color;
+						parent->color = 'B';
 						if (siblingIsLeftChild and nephewIsLeftChild){//LL case
 							root = rightRotation(parent);
 							if (sibling->left){
@@ -342,6 +344,7 @@ void deleteUpdate(node* deleteMe, node* successor, node* &root){
 						break;
 					}
 					else{//LR case and RL case
+						//recoloring
 						redChild->color = parent->color;
 						parent->color = 'B';
 						sibling->color = 'B';
@@ -352,6 +355,9 @@ void deleteUpdate(node* deleteMe, node* successor, node* &root){
 						else if (!siblingIsLeftChild and nephewIsLeftChild){//RL case
 							root = rightRotation(sibling);
 							root = leftRotation(parent);
+						}
+						if (successor->color == 'b'){
+							successor->color = 'B';
 						}
 						break;
 					}
@@ -395,18 +401,18 @@ void deleteUpdate(node* deleteMe, node* successor, node* &root){
 
 void deleteNode(node* current, node* &root){//delete function to delete and rearange the tree after deleting a node
 	if (current->left == nullptr and current->right == nullptr){//if current has NO CHILDREN:
-		if (current != root){
+		if (current != root){//if current is not the root:
 			node* parent = current->parent;
 
-			node* successor = new node();
+			node* successor = new node();//define its successor as a black null node
 			successor->color = 'B';
-			successor->parent = parent;
+			successor->parent = parent;//but set it to replace current
 			
-			eraseNodeFromParent(current, successor);
-			deleteUpdate(current, successor, root);
+			eraseNodeFromParent(current, successor);//replace current's parent's child with successor
+			deleteUpdate(current, successor, root);//rearange the coloring
 
 			if (successor->parent != nullptr){
-				eraseNodeFromParent(successor, nullptr);
+				eraseNodeFromParent(successor, nullptr);//then delinks and deletes the temporary successor after
 			}
 			else if (root == successor){
 				root = nullptr;
@@ -438,7 +444,6 @@ void deleteNode(node* current, node* &root){//delete function to delete and rear
 		else{//if current is root:
 			deleteUpdate(current, current->right, root);
 			root = root->right;//sets new root
-			//deleteUpdate(current, current->right, root);
 		}
 	}
 	else if (current->left != nullptr and current->right == nullptr){//if current has ONE CHILD (left):
@@ -459,15 +464,14 @@ void deleteNode(node* current, node* &root){//delete function to delete and rear
 		else{//if current is root:
 			deleteUpdate(current, current->left, root);
 			root = root->left;//sets new root
-			//deleteUpdate(current, current->left, root);
 		}
 	}
 	else if (current->left != nullptr and current->right != nullptr){//if current has TWO CHILDREN:
 		//gets successor of node to delete
 		node* successor = getSuccessor(current);
-		current->value = successor->value;
+		current->value = successor->value;//copies successor's value onto current
 		
-		deleteNode(successor, root);
+		deleteNode(successor, root);//recursively runs the function again on the successor, which will always be either a 0 or 1 child case
 	}
 }
 
